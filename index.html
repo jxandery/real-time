@@ -18,7 +18,7 @@ body{
     }
 
     #mainWrapper{
-
+      display:        none;
     }
 
     #chatWrapper{
@@ -47,7 +47,6 @@ body{
       background:     #f4f4f4;
       padding:        10px;
       margin-left:    20px;
-      display:        none;
     }
 
     input{
@@ -90,15 +89,54 @@ body{
           var $messageForm  = $('#messageForm');
           var $message      = $('#message');
           var $chat         = $('#chatWindow');
+          var $usernameForm = $('#usernameForm');
+          var $users        = $('#users');
+          var $username     = $('#username');
+          var $error        = $('#error');
 
+          // create usernames
+          // send out the username; if it exists hide the create user form and display the chat window
+          // else if username doesn't exist display an error message that the username already exists
+          // and at the end set the username back to empty
+          $usernameForm.submit(function(e) {
+            e.preventDefault();
+            socket.emit('new user', $username.val(), function(data) {
+              if (data) {
+                $('#namesWrapper').hide();
+                $('#mainWrapper').show();
+              } else {
+                $error.html('Username is already taken');
+              }
+            });
+            $username.val('');
+          });
+
+          // create users list to be displayed
+          // set html to an initial value of emtpy string
+          // iterate through the usernames array
+          // concatenate those usernames plus a line break on to the html string
+          // set the users' html value to that string of usernames and line breaks
+          socket.on('usernames', function(data) {
+            var html = '';
+            for (var i = 0; i < data.length; i++) {
+              html += data[i] + '<br>';
+            }
+            $users.html(html);
+          });
+
+          // submit message form
+          // after submit reset the message field back to empty
           $messageForm.submit(function(e){
             e.preventDefault();
             socket.emit('send message', $message.val());
             $message.val('');
           });
 
+          // add new messages with username to chat window
+          // all of the chat messages are concatenated into one giant string
+          // new messages are just appended on separated by line breaks
           socket.on('new message', function(data){
-            $chat.append(data.msg + '<br>');
+            $chat.append('<strong>' + data.user + '</strong>: ' + data.msg + '<br>');
           });
         });
 
